@@ -1,18 +1,31 @@
 FROM stirlingtools/stirling-pdf:latest
 
-# === ENVIRONMENT VARIABLES (नाम और भाषा) ===
-ENV UI_APPNAME="Mera PDF"
-ENV UI_APPNAVBARNAME="Mera PDF"
-ENV UI_HOMEDESCRIPTION="मुफ्त हिंदी PDF टूल्स - Mera PDF"
-ENV SYSTEM_DEFAULTLOCALE="hi-IN"
+# Working directory
+WORKDIR /usr/local/tomcat/webapps/ROOT
 
-# === CUSTOM FILES FOLDER बनाएं ===
-RUN mkdir -p /customFiles/static
+# Custom CSS को add करें
+COPY custom-styles.css ./css/custom-styles.css
 
-# === CUSTOM CSS COPY करें ===
-COPY custom-styles.css /customFiles/static/custom.css
+# Logo और Favicon
+COPY favicon.ico ./
+COPY logo.png ./assets/ 2>/dev/null || true
 
-# === CUSTOM FILES ENABLE करें ===
-ENV UI_CUSTOM_FILES_ENABLED="true"
+# सभी HTML files में changes करें
+RUN find /usr/local/tomcat/webapps/ROOT -name "*.html" -type f | while read file; do \
+    sed -i 's/Stirling PDF/MeraPDF/g' "$file" && \
+    sed -i 's/Stirling/MeraPDF/g' "$file" && \
+    sed -i 's/<title>.*<\/title>/<title>MeraPDF - Professional PDF Tools<\/title>/g' "$file"; \
+done
+
+# Custom CSS को HTML के head में inject करें
+RUN find /usr/local/tomcat/webapps/ROOT -name "index.html" | while read file; do \
+    sed -i '/<\/head>/i\    <link rel="stylesheet" href="/css/custom-styles.css">' "$file"; \
+done
+
+# Favicon को link करें
+RUN find /usr/local/tomcat/webapps/ROOT -name "index.html" | while read file; do \
+    sed -i '/<\/head>/i\    <link rel="icon" type="image/x-icon" href="/favicon.ico">' "$file"; \
+done
 
 EXPOSE 8080
+CMD ["catalina.sh", "run"]
