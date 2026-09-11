@@ -1,30 +1,24 @@
 FROM stirlingtools/stirling-pdf:latest
 
-# Working directory
 WORKDIR /usr/local/tomcat/webapps/ROOT
 
-# Custom CSS को add करें
-COPY custom-styles.css ./css/custom-styles.css
+# Custom files को सही जगह पर copy करो
+COPY favicon.ico ./modern-logo/
+COPY logo.png ./modern-logo/
+COPY custom-styles.css ./assets/
 
-# Logo और Favicon
-COPY favicon.ico ./
-COPY logo.png ./assets/ 2>/dev/null || true
+# Title को change करो (HTML में)
+RUN sed -i 's/<title>Stirling PDF<\/title>/<title>MeraPDF - Professional PDF Tools<\/title>/g' ./index.html
 
-# सभी HTML files में "Stirling" को "MeraPDF" से replace करें
-RUN find /usr/local/tomcat/webapps/ROOT -type f \( -name "*.html" -o -name "*.js" \) \
- -exec sed -i 's/Stirling PDF/MeraPDF/g; s/Stirling/MeraPDF/g; s/STIRLING/MERAPDF/g' {} \;
+# Meta tags में भी "Stirling" को "MeraPDF" से replace करो
+RUN sed -i 's/Stirling PDF/MeraPDF/g' ./index.html && \
+    sed -i "s/The Free Adobe Acrobat alternative/Professional PDF Processing Tool/g" ./index.html
 
-# Title को set करें
-RUN find /usr/local/tomcat/webapps/ROOT -name "*.html" \
- -exec sed -i 's/<title>.*<\/title>/<title>MeraPDF - Professional PDF Tools<\/title>/g' {} \;
+# Custom CSS को HTML में add करो (head के अंदर)
+RUN sed -i '/<link rel="stylesheet" crossorigin href="\.\/assets\/index/a \ <link rel="stylesheet" href="./assets/custom-styles.css">' ./index.html
 
-# Favicon को link करें
-RUN find /usr/local/tomcat/webapps/ROOT -name "index.html" \
- -exec sed -i '/<\/head>/i\ <link rel="icon" type="image\/x-icon" href="\/favicon.ico">' {} \;
-
-# Custom CSS को load करें
-RUN find /usr/local/tomcat/webapps/ROOT -name "index.html" \
- -exec sed -i '/<\/head>/i\ <link rel="stylesheet" href="\/css\/custom-styles.css">' {} \;
+# Favicon path को ठीक करो
+RUN sed -i 's|href="modern-logo/favicon.ico"|href="/modern-logo/favicon.ico"|g' ./index.html
 
 EXPOSE 8080
 CMD ["catalina.sh", "run"]
