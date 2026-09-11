@@ -10,22 +10,21 @@ COPY custom-styles.css ./css/custom-styles.css
 COPY favicon.ico ./
 COPY logo.png ./assets/ 2>/dev/null || true
 
-# सभी HTML files में changes करें
-RUN find /usr/local/tomcat/webapps/ROOT -name "*.html" -type f | while read file; do \
-    sed -i 's/Stirling PDF/MeraPDF/g' "$file" && \
-    sed -i 's/Stirling/MeraPDF/g' "$file" && \
-    sed -i 's/<title>.*<\/title>/<title>MeraPDF - Professional PDF Tools<\/title>/g' "$file"; \
-done
+# सभी HTML files में "Stirling" को "MeraPDF" से replace करें
+RUN find /usr/local/tomcat/webapps/ROOT -type f \( -name "*.html" -o -name "*.js" \) \
+ -exec sed -i 's/Stirling PDF/MeraPDF/g; s/Stirling/MeraPDF/g; s/STIRLING/MERAPDF/g' {} \;
 
-# Custom CSS को HTML के head में inject करें
-RUN find /usr/local/tomcat/webapps/ROOT -name "index.html" | while read file; do \
-    sed -i '/<\/head>/i\    <link rel="stylesheet" href="/css/custom-styles.css">' "$file"; \
-done
+# Title को set करें
+RUN find /usr/local/tomcat/webapps/ROOT -name "*.html" \
+ -exec sed -i 's/<title>.*<\/title>/<title>MeraPDF - Professional PDF Tools<\/title>/g' {} \;
 
 # Favicon को link करें
-RUN find /usr/local/tomcat/webapps/ROOT -name "index.html" | while read file; do \
-    sed -i '/<\/head>/i\    <link rel="icon" type="image/x-icon" href="/favicon.ico">' "$file"; \
-done
+RUN find /usr/local/tomcat/webapps/ROOT -name "index.html" \
+ -exec sed -i '/<\/head>/i\ <link rel="icon" type="image\/x-icon" href="\/favicon.ico">' {} \;
+
+# Custom CSS को load करें
+RUN find /usr/local/tomcat/webapps/ROOT -name "index.html" \
+ -exec sed -i '/<\/head>/i\ <link rel="stylesheet" href="\/css\/custom-styles.css">' {} \;
 
 EXPOSE 8080
 CMD ["catalina.sh", "run"]
